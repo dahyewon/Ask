@@ -1,0 +1,75 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Question {
+  id           String            @id @default(cuid())
+  content      String
+  isActive     Boolean           @default(true)
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+  tags         QuestionTag[]
+  reviewState  ReviewState?
+  answers      InterviewAnswer[]
+}
+
+model Tag {
+  id        String        @id @default(cuid())
+  name      String        @unique
+  color     String
+  createdAt DateTime      @default(now())
+  questions QuestionTag[]
+}
+
+model QuestionTag {
+  questionId String
+  tagId      String
+  question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  tag        Tag      @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([questionId, tagId])
+}
+
+model ReviewState {
+  id              String    @id @default(cuid())
+  questionId      String    @unique
+  easeFactor      Float     @default(2.5)
+  intervalDays    Int       @default(0)
+  repetitionCount Int       @default(0)
+  difficultyLevel String    @default("medium")
+  dueAt           DateTime  @default(now())
+  lastReviewedAt  DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  question        Question  @relation(fields: [questionId], references: [id], onDelete: Cascade)
+}
+
+model InterviewSession {
+  id            String            @id @default(cuid())
+  startedAt     DateTime
+  endedAt       DateTime?
+  status        String
+  selectedTags  Json
+  questionCount Int
+  createdAt     DateTime          @default(now())
+  answers       InterviewAnswer[]
+}
+
+model InterviewAnswer {
+  id               String           @id @default(cuid())
+  sessionId        String
+  questionId       String
+  questionOrder    Int
+  audioUrl         String?
+  transcript       String
+  durationSec      Int
+  difficultyRating String
+  answeredAt       DateTime
+  session          InterviewSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  question         Question         @relation(fields: [questionId], references: [id])
+}
